@@ -96,7 +96,7 @@ struct ParticlesWrangle : zeno::INode {
                     parnames.emplace_back(key, 0);
                     return 1;
                 } else {
-                    printf("invalid parameter type encountered: `%s`\n",
+                    std::printf("invalid parameter type encountered: `%s`\n",
                             typeid(T).name());
                     return 0;
                 }

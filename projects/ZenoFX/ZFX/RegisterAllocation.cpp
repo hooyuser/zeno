@@ -303,7 +303,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 
     std::optional<call_on_dtor> touch(int operandid, int &regid) {
         if (regid >= NREGS) {
-            printf("register spilled at %d\n", regid);
+            std::printf("register spilled at %d\n", regid);
             int memid = regid - NREGS;
             memsize = std::max(memsize, memid + 1);
             if (!operandid) {
