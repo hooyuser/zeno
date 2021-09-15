@@ -7,4 +7,4 @@ using namespace zeno::loggerstd;
 #include <cstdio>
 #endif
 
-
+#define dbg_printf(...) log_printf("[ZenoFX] " __VA_ARGS__)
