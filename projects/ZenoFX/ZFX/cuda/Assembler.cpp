@@ -256,19 +256,7 @@ struct ImplAssembler {
         code = builder->finish(nlocals);
 
 #ifdef ZFX_PRINT_IR
-<<<<<<< HEAD
-        std::printf("params: %d\n", nparams);
-        std::printf("locals: %d\n", nlocals);
-        std::printf("globals: %d\n", nglobals);
-        std::printf("cuda code:\n");
-        std::printf("%s", code.c_str());
-        std::printf("\n");
-=======
-        log_printf("params: %d\n", nparams);
-        log_printf("locals: %d\n", nlocals);
-        log_printf("globals: %d\n", nglobals);
-        log_printf("cuda code:\n%s\n", code.c_str());
->>>>>>> master
+
 #endif
     }
 };
