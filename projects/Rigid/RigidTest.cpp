@@ -147,11 +147,11 @@ struct PrimitiveConvexDecomposition : zeno::INode {
         auto listPrim = std::make_shared<zeno::ListObject>();
         listPrim->arr.clear();
 
-        printf("hacd got %d clusters\n", nClusters);
+        log_debugf("hacd got %d clusters\n", nClusters);
         for (size_t c = 0; c < nClusters; c++) {
             size_t nPoints = hacd.GetNPointsCH(c);
             size_t nTriangles = hacd.GetNTrianglesCH(c);
-            printf("hacd cluster %d have %d points, %d triangles\n",
+            log_debugf("hacd cluster %d have %d points, %d triangles\n",
                 c, nPoints, nTriangles);
 
             points.clear();
@@ -211,30 +211,31 @@ ZENDEFNODE(BulletMakeConvexMeshShape, {
 
 struct BulletMakeConvexHullShape : zeno::INode {
     virtual void apply() override {
-        auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
-
 #if 1
+        auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
         auto margin = get_input2<float>("margin");
-        auto highres = get_input2<int>("highres");
-        hull->buildHull(margin, highres);
+        hull->buildHull(margin, 0);
         auto convex = std::make_unique<btConvexHullShape>(
              (const btScalar *)hull->getVertexPointer(), hull->numVertices());
         convex->setMargin(btScalar(margin));
 #else
+        auto prim = get_input<PrimitiveObject>("prim");
         auto convexHC = std::make_unique<btConvexHullComputer>();
         std::vector<float> vertices;
-        for (int i = 0; i < inShape->getNumVertices(); i++) {
-            btVector3 coor;
-            //inShape->btTriangleIndexVertexArray::preallocateVertices
-            inShape->getVertex(i, coor);
+        vertices.reserve(prim->size() * 3);
+        for (int i = 0; i < prim->size(); i++) {
+            btVector3 coor = vec_to_other<btVector3>(prim->verts[i]);
             vertices.push_back(coor[0]);
             vertices.push_back(coor[1]);
             vertices.push_back(coor[2]);
         }
-        convexHC->compute(vertices.data(), sizeof(float) * 3, vertices.size() / 3, 0.04f, 0.0f);
-        auto convex = std::make_unique<btConvexHullShape>(&(convexHC->vertices[0].getX()), convexHC->vertices.size());
+        auto margin = get_input2<float>("margin");
+        convexHC->compute(vertices.data(), sizeof(float) * 3, vertices.size() / 3, 0.0f, 0.0f);
+        auto convex = std::make_unique<btConvexHullShape>(
+                &(convexHC->vertices[0].getX()), convexHC->vertices.size());
+        convex->setMargin(btScalar(margin));
 #endif
 
         // auto convex = std::make_unique<btConvexPointCloudShape>();
@@ -252,7 +253,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeConvexHullShape, {
-    {"triMesh", {"float", "margin", "0"}, {"int", "highres", "0"}},
+    {"triMesh", {"float", "margin", "0"}},
     {"shape"},
     {},
     {"Bullet"},
@@ -267,7 +268,7 @@ struct BulletMakeCompoundShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeCompoundShape, {
-    {""},
+    {},
     {"compound"},
     {},
     {"Bullet"},
@@ -384,6 +385,7 @@ struct BulletSetObjectDamping : zeno::INode {
         auto object = get_input<BulletObject>("object");
         auto dampLin = get_input2<float>("dampLin");
         auto dampAug = get_input2<float>("dampAug");
+        log_debug("set object {} with dampLin={}, dampAug={}", (void*)object.get(), dampLin, dampAug);
         object->body->setDamping(dampLin, dampAug);
         set_output("object", std::move(object));
     }
@@ -400,6 +402,7 @@ struct BulletSetObjectFriction : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
         auto friction = get_input2<float>("friction");
+        log_debug("set object {} with friction={}", (void*)object.get(), friction);
         object->body->setFriction(friction);
         set_output("object", std::move(object));
     }
@@ -416,6 +419,7 @@ struct BulletSetObjectRestitution : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
         auto restitution = get_input2<float>("restitution");
+        log_debug("set object {} with restituion={}", (void*)object.get(), restitution);
         object->body->setRestitution(restitution);
         set_output("object", std::move(object));
     }
@@ -493,7 +497,7 @@ struct BulletConstraint : zeno::IObject {
         //gf.setOrigin(cposw);
         auto trA = obj1->body->getWorldTransform().inverse();// * gf;
         auto trB = obj2->body->getWorldTransform().inverse();// * gf;
-#if 0
+#if 1
         constraint = std::make_unique<btFixedConstraint>(
                 *obj1->body, *obj2->body, trA, trB);
 #else
@@ -708,26 +712,26 @@ struct BulletWorld : zeno::IObject {
                 collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
 
-        log_trace("creating bullet world {}", (void *)this);
+        log_debug("creating bullet world {}", (void *)this);
     }
 #endif
 
     void addObject(std::shared_ptr<BulletObject> obj) {
-        log_trace("adding object {}", (void *)obj.get());
+        log_debug("adding object {}", (void *)obj.get());
         dynamicsWorld->addRigidBody(obj->body.get());
         objects.insert(std::move(obj));
     }
 
     void removeObject(std::shared_ptr<BulletObject> const &obj) {
-        log_trace("removing object {}", (void *)obj.get());
+        log_debug("removing object {}", (void *)obj.get());
         dynamicsWorld->removeRigidBody(obj->body.get());
         objects.erase(obj);
     }
 
     void setObjectList(std::vector<std::shared_ptr<BulletObject>> objList) {
         std::set<std::shared_ptr<BulletObject>> objSet;
-        log_trace("setting object list len={}", objList.size());
-        log_trace("existing object list len={}", objects.size());
+        log_debug("setting object list len={}", objList.size());
+        log_debug("existing object list len={}", objects.size());
         for (auto const &object: objList) {
             objSet.insert(object);
             if (objects.find(object) == objects.end()) {
@@ -742,21 +746,21 @@ struct BulletWorld : zeno::IObject {
     }
 
     void addConstraint(std::shared_ptr<BulletConstraint> cons) {
-        log_trace("adding constraint {}", (void *)cons.get());
+        log_debug("adding constraint {}", (void *)cons.get());
         dynamicsWorld->addConstraint(cons->constraint.get(), true);
         constraints.insert(std::move(cons));
     }
 
     void removeConstraint(std::shared_ptr<BulletConstraint> const &cons) {
-        log_trace("removing constraint {}", (void *)cons.get());
+        log_debug("removing constraint {}", (void *)cons.get());
         dynamicsWorld->removeConstraint(cons->constraint.get());
         constraints.erase(cons);
     }
 
     void setConstraintList(std::vector<std::shared_ptr<BulletConstraint>> consList) {
         std::set<std::shared_ptr<BulletConstraint>> consSet;
-        log_trace("setting constraint list len={}", consList.size());
-        log_trace("existing constraint list len={}", constraints.size());
+        log_debug("setting constraint list len={}", consList.size());
+        log_debug("existing constraint list len={}", constraints.size());
         for (auto const &constraint: consList) {
             if (!constraint->constraint->isEnabled())
                 continue;
@@ -797,10 +801,10 @@ struct BulletWorld : zeno::IObject {
     }*/
 
     void step(float dt = 1.f / 60.f, int steps = 1) {
-        log_trace("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
+        log_debug("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
-        //for(int i=0;i<steps;i++)
-        dynamicsWorld->stepSimulation(dt, steps, dt / steps);
+        for(int i=0;i<steps;i++)
+            dynamicsWorld->stepSimulation(dt/(float)steps, 1, dt / (float)steps);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {

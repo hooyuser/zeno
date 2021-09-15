@@ -8,4 +8,8 @@ using namespace zeno::loggerstd;
 #endif
 
 
+<<<<<<< HEAD
 #define dbg_printf(...) std::printf("[ZenoFX] " __VA_ARGS__)
+=======
+#define dbg_printf(...) log_printf("[ZenoFX] " __VA_ARGS__)
+>>>>>>> master

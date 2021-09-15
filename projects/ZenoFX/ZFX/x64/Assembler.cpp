@@ -343,8 +343,13 @@ struct ImplAssembler {
         auto const &insts = builder->getResult();
 
 #ifdef ZFX_PRINT_IR
+<<<<<<< HEAD
         std::printf("variables: %d slots\n", nlocals);
         std::printf("consts: %d values\n", nconsts);
+=======
+        log_printf("variables: %d slots\n", nlocals);
+        log_printf("consts: %d values\n", nconsts);
+>>>>>>> master
         {
             std::string _ = "insts:";
             for (auto const &inst: insts) {
@@ -352,7 +357,11 @@ struct ImplAssembler {
                 sprintf(buf, " %02X", inst);
                 _ += buf;
             }
+<<<<<<< HEAD
             std::printf("%s\n", _.c_str());
+=======
+            log_printf("%s\n", _.c_str());
+>>>>>>> master
         }
 #endif
 
