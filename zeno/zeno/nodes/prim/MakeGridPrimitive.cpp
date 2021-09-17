@@ -214,42 +214,56 @@ ZENDEFNODE(Make3DGridPointsInAABB,
 // TODO: deprecate this xuben-happy node
 struct MakeCubePrimitive : INode {
     virtual void apply() override {
-        float spacing = get_input<NumericObject>("spacing")->get<float>();
-        size_t nx = get_input<NumericObject>("nx")->get<int>();
-        size_t ny = has_input("ny") ?
-            get_input<NumericObject>("ny")->get<int>() : nx;
-        size_t nz = has_input("nz") ?
-            get_input<NumericObject>("nz")->get<int>() : nx;
+        float size_x = get_input<NumericObject>("size_x")->get<float>();
+        float size_y = get_input<NumericObject>("size_y")->get<float>();
+        float size_z = get_input<NumericObject>("size_z")->get<float>();
 
         vec3f o = has_input("origin") ?
             get_input<NumericObject>("origin")->get<vec3f>() : vec3f(0);
     
-    auto prim = std::make_shared<PrimitiveObject>();
-    prim->resize(nx * ny * nz);
-    auto &pos = prim->add_attr<vec3f>("pos");
+        auto prim = std::make_shared<PrimitiveObject>();
+        prim->resize(8);
+        auto &pos = prim->add_attr<vec3f>("pos");
 #pragma omp parallel for
-    // for (size_t y = 0; y < ny; y++) {
-    //     for (size_t x = 0; x < nx; x++) {
-    for (int index = 0; index < nx * ny * nz; index++) {
-      int x = index % nx;
-      int y = index / nx % ny;
-      int z = index / nx / ny;
-      vec3f p = o + vec3f(x * spacing, y * spacing, z * spacing);
-      pos[index] = p;
-      // }
+        // for (size_t y = 0; y < ny; y++) {
+        //     for (size_t x = 0; x < nx; x++) {
+        for (int index = 0; index < 8; index++) {
+          int x = index / 2 / 2;
+          int y = index / 2 % 2;
+          int z = index % 2;
+          vec3f p = o + vec3f(size_x * (x - 0.5), size_y * (y - 0.5), size_z * (z - 0.5));
+          pos[index] = p;
+          // }
+        }
+        std::vector<vec3i> cubeTris{ 
+            vec3i(4, 2, 0),
+            vec3i(2, 7, 3),
+            vec3i(6, 5, 7),
+            vec3i(1, 7, 5),
+            vec3i(0, 3, 1),
+            vec3i(4, 1, 5),
+            vec3i(4, 6, 2),
+            vec3i(2, 6, 7),
+            vec3i(6, 4, 5),
+            vec3i(1, 3, 7),
+            vec3i(0, 2, 3),
+            vec3i(4, 0, 1)};
+        prim->tris.values = cubeTris;
+        set_output("prim", std::move(prim));
     }
-    set_output("prim", std::move(prim));
-  }
 };
-
-ZENDEFNODE(MakeCubePrimitive,
-        { /* inputs: */ {
-        "spacing", "nx", "ny", "nz", "origin",
-        }, /* outputs: */ {
+ZENO_DEFNODE(MakeCubePrimitive)(
+    { /* inputs: */ {
+        {"float","size_x","2.0"},
+        {"float","size_y","2.0"},
+        {"float","size_z","2.0"},
+        {"vec3f","origin","0,0,0"},
+    }, /* outputs: */ {
         "prim",
-        }, /* params: */ {
-        {},
-        }, /* category: */ {
+    }, /* params: */ {
+    }, /* category: */ {
         "primitive",
-        }});
+    } }
+);
+
 } // namespace zeno
