@@ -5,6 +5,7 @@
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/evaluate_condition.h>
 #include <zeno/types/MutableObject.h>
+#include <zeno/utils/any.h>
 
 
 namespace zeno {
@@ -91,6 +92,33 @@ ZENDEFNODE(CachedOnce, {
     {"control"},
 });
 
+struct CacheLastFrame : zeno::INode {
+    bool m_firstFrame = true;
+    zany m_lastFrameCache = zany();
+
+    virtual void apply() override {
+        auto input = get_input2("input");
+        set_output2("output", std::move(input));      
+        if (!m_firstFrame) {
+            set_output2("lastFrame", std::move(m_lastFrameCache));
+        }
+        m_lastFrameCache = input;
+        m_firstFrame = false;
+    }
+};
+
+
+ZENO_DEFNODE(CacheLastFrame)(
+    { /* inputs: */ {
+        "input",
+    }, /* outputs: */ {
+        "lastFrame"
+        "output"
+    }, /* params: */ {
+    }, /* category: */ {
+        "control",
+    } }
+);
 
 struct MakeMutable : zeno::INode {
     virtual void apply() override {
