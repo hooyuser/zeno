@@ -53,31 +53,43 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
      "openvdb",
      }});
 
-struct  VDBSmoothSDF : zeno::INode {
+struct VDBSmooth : zeno::INode {
   virtual void apply() override {
-
-    auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
-    int width = std::get<int>(get_param("width"));
-    int iterations = std::get<int>(get_param("iterations"));
-    auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutSDF->m_grid));
-    lsf.setGrainSize(1);
-    lsf.gaussian(width, iterations, nullptr);
-    //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
-    set_output("inoutSDF", get_input("inoutSDF"));
+    auto inoutVDBtype = get_input<VDBGrid>("vdbGrid")->getType();
+    if (inoutVDBtype == std::string("FloatGrid")) {
+        auto inoutVDB = get_input("inoutVDB")->as<VDBFloatGrid>();
+        int width = std::get<int>(get_param("width"));
+        int iterations = std::get<int>(get_param("iterations"));
+        auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutVDB->m_grid));
+        lsf.setGrainSize(1);
+        lsf.gaussian(width, iterations, nullptr);
+        //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
+        set_output("inoutVDB", get_input("inoutVDB"));
+    }
+    else if (inoutVDBtype == std::string("Vec3fGrid")) {
+        auto inoutVDB = get_input("inoutVDB")->as<VDBFloat3Grid>();
+        int width = std::get<int>(get_param("width"));
+        int iterations = std::get<int>(get_param("iterations"));
+        auto lsf = openvdb::tools::Filter<openvdb::Vec3fGrid>(*(inoutVDB->m_grid));
+        lsf.setGrainSize(1);
+        lsf.gaussian(width, iterations, nullptr);
+        //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
+        set_output("inoutVDB", get_input("inoutVDB"));
+    }
   }
 };
 
-static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
+ZENO_DEFNODE(VDBSmooth)(
      { /* inputs: */ {
-     "inoutSDF", 
+     "inoutVDB", 
      }, /* outputs: */ {
-     "inoutSDF",
+     "inoutVDB",
      }, /* params: */ {
          {"int", "width", "1"},
          {"int", "iterations", "1"},
      }, /* category: */ {
      "openvdb",
-     }});
+}});
 
 struct  VDBDilateTopo : zeno::INode {
   virtual void apply() override {
