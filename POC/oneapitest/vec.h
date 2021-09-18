@@ -4,8 +4,6 @@
 #include <cmath>
 #include <cstdint>
 
-namespace fdb {
-
 /* main class definition */
 
 template <size_t N, class T>
@@ -490,5 +488,3 @@ using vec4S = vec<4, size_t>;
 using vec4Q = vec<4, uint64_t>;
 using vec4H = vec<4, uint16_t>;
 using vec4C = vec<4, uint8_t>;
-
-}

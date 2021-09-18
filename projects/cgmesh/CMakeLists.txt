@@ -29,7 +29,6 @@ if (ZENO_CGMESH_WITH_MESHFIX)
         find_package(LAPACK CONFIG REQUIRED)
         target_link_libraries(zeno_cgmesh PRIVATE OpenBLAS::OpenBLAS)
         target_link_libraries(zeno_cgmesh PRIVATE ${LAPACK_LIBRARIES})
-        # target_link_libraries(zeno_cgmesh PRIVATE C:/Users/archibate/Downloads/LAPACKlib/x64/LAPACK.lib)  # make archibate happy (so why lapack not available as find_package!!)
     endif()
 endif()
 
