@@ -55,11 +55,11 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
 
 struct VDBSmooth : zeno::INode {
   virtual void apply() override {
-    auto inoutVDBtype = get_input<VDBGrid>("vdbGrid")->getType();
+    auto inoutVDBtype = get_input<VDBGrid>("inoutVDB")->getType();
+    int width = get_input<NumericObject>("width")->get<int>();
+    int iterations = get_input<NumericObject>("iterations")->get<int>();
     if (inoutVDBtype == std::string("FloatGrid")) {
         auto inoutVDB = get_input("inoutVDB")->as<VDBFloatGrid>();
-        int width = std::get<int>(get_param("width"));
-        int iterations = std::get<int>(get_param("iterations"));
         auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutVDB->m_grid));
         lsf.setGrainSize(1);
         lsf.gaussian(width, iterations, nullptr);
@@ -68,12 +68,10 @@ struct VDBSmooth : zeno::INode {
     }
     else if (inoutVDBtype == std::string("Vec3fGrid")) {
         auto inoutVDB = get_input("inoutVDB")->as<VDBFloat3Grid>();
-        int width = std::get<int>(get_param("width"));
-        int iterations = std::get<int>(get_param("iterations"));
+        
         auto lsf = openvdb::tools::Filter<openvdb::Vec3fGrid>(*(inoutVDB->m_grid));
         lsf.setGrainSize(1);
         lsf.gaussian(width, iterations, nullptr);
-        //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
         set_output("inoutVDB", get_input("inoutVDB"));
     }
   }
@@ -82,11 +80,12 @@ struct VDBSmooth : zeno::INode {
 ZENO_DEFNODE(VDBSmooth)(
      { /* inputs: */ {
      "inoutVDB", 
+     {"int", "width", "1"},
+     {"int", "iterations", "1"},
      }, /* outputs: */ {
      "inoutVDB",
      }, /* params: */ {
-         {"int", "width", "1"},
-         {"int", "iterations", "1"},
+         
      }, /* category: */ {
      "openvdb",
 }});
