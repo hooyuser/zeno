@@ -264,7 +264,6 @@ struct MakeBoxPrimitive : INode {
         auto prim = std::make_shared<PrimitiveObject>();
         prim->resize(8);
         auto& pos = prim->add_attr<vec3f>("pos");
-#pragma omp parallel for
         for (int index = 0; index < 8; index++) {
             int x = index / 2 / 2;
             int y = index / 2 % 2;
